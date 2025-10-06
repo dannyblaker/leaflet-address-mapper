@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Interactive Address Mapping with Leaflet.js | OpenStreetMap Demo</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="A simple demonstration of plotting addresses on an interactive map using Leaflet.js and OpenStreetMap. Features Melbourne train stations as example data.">
+    <meta name="keywords" content="leaflet, openstreetmap, mapping, javascript, addresses, geolocation">
+    <meta name="author" content="Interactive Address Mapping Demo">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1em;
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+
+        .info-panel {
+            padding: 20px;
+            background: #ecf0f1;
+            border-top: 1px solid #bdc3c7;
+        }
+
+        .station-count {
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* Custom marker tooltip styling */
+        .marker-tooltip {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .marker-tooltip::before {
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.4em;
+            }
+
+            #map {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Interactive Address Mapping with Leaflet.js</h1>
+            <p>Demonstration using Melbourne Train Stations | Powered by OpenStreetMap</p>
+        </div>
+        <div id="map"></div>
+        <div class="info-panel">
+            <div class="station-count" id="station-count">Loading stations...</div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        /**
+         * Interactive Address Mapping Demo
+         * 
+         * This script demonstrates how to:
+         * 1. Initialize a Leaflet map with OpenStreetMap tiles
+         * 2. Plot multiple addresses using coordinates
+         * 3. Add interactive popups to markers
+         * 4. Customize map appearance and behavior
+         * 
+         * Feel free to modify the addresses array below with your own locations!
+         */
+
+        // Initialize map centered on Melbourne CBD
+        // Coordinates: [latitude, longitude], zoom level (1-19)
+        var map = L.map('map').setView([-37.8150, 144.9631], 15);
+
+        // Add OpenStreetMap tiles (free, no API key required)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        /**
+         * Address Data Structure
+         * 
+         * Each location needs:
+         * - address: Display name for the popup
+         * - lat: Latitude (negative for Southern Hemisphere)
+         * - lon: Longitude (positive for Eastern Hemisphere in Australia)
+         * 
+         * To find coordinates:
+         * - Google Maps: Right-click → "What's here?"
+         * - OpenStreetMap: Click location, see coordinates in URL
+         */
+        var addresses = [
+            {
+                address: 'Flinders Street Station',
+                lat: -37.8183,
+                lon: 144.9671,
+                description: 'Melbourne\'s busiest railway station and iconic landmark'
+            },
+            {
+                address: 'Southern Cross Station',
+                lat: -37.8182,
+                lon: 144.9526,
+                description: 'Major railway hub connecting regional and metropolitan services'
+            },
+            {
+                address: 'Parliament Station',
+                lat: -37.8109,
+                lon: 144.9729,
+                description: 'City Loop station serving the parliamentary precinct'
+            },
+            {
+                address: 'Melbourne Central Station',
+                lat: -37.8102,
+                lon: 144.9629,
+                description: 'Underground station beneath the Melbourne Central shopping complex'
+            },
+            {
+                address: 'Flagstaff Station',
+                lat: -37.8121,
+                lon: 144.9563,
+                description: 'City Loop station serving the legal and business district'
+            }
+        ];
+
+        /**
+         * Create and add markers to the map
+         * 
+         * For each address, we:
+         * 1. Create a marker at the coordinates
+         * 2. Add it to the map
+         * 3. Bind a popup with the location information
+         */
+        var markerGroup = L.layerGroup().addTo(map);
+
+        addresses.forEach(function (location, index) {
+            // Create marker
+            var marker = L.marker([location.lat, location.lon])
+                .addTo(markerGroup)
+                .bindPopup(`
+                    <div style="text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">${location.address}</h3>
+                        <p style="margin: 0; font-size: 0.9em; color: #7f8c8d;">${location.description}</p>
+                        <hr style="margin: 10px 0; border: 1px solid #ecf0f1;">
+                        <small style="color: #95a5a6;">
+                            📍 ${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}
+                        </small>
+                    </div>
+                `);
+
+            // Optional: Add number labels to markers
+            marker.bindTooltip(`${index + 1}`, {
+                permanent: false,
+                direction: 'center',
+                className: 'marker-tooltip'
+            });
+        });
+
+        // Update station count in the info panel
+        document.getElementById('station-count').textContent =
+            `📍 Displaying ${addresses.length} train stations in Melbourne CBD`;
+
+        /**
+         * Optional: Fit map bounds to show all markers
+         * Uncomment the lines below to automatically zoom to show all points
+         */
+        // var group = new L.featureGroup(markers);
+        // map.fitBounds(group.getBounds().pad(0.1));
+
+        /**
+         * Customization Examples:
+         * 
+         * 1. Change map center:
+         *    map.setView([YOUR_LAT, YOUR_LON], ZOOM_LEVEL);
+         * 
+         * 2. Use different tile provider:
+         *    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png')
+         * 
+         * 3. Custom marker icons:
+         *    var customIcon = L.icon({
+         *        iconUrl: 'path/to/icon.png',
+         *        iconSize: [32, 32]
+         *    });
+         *    L.marker([lat, lon], {icon: customIcon})
+         * 
+         * 4. Add click events:
+         *    marker.on('click', function(e) {
+         *        console.log('Clicked:', location.address);
+         *    });
+         */
+    </script>
+</body>
+
+</html>
