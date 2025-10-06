@@ -2,6 +2,11 @@
 
 A lightweight, single-file demonstration of how to plot addresses on an interactive map using OpenStreetMap and Leaflet.js. This project showcases Melbourne train stations as an example of location-based data visualization.
 
+**You are most welcome to use this code in your commercial projects, all that I ask in return is that you credit my work by providing a link back to this repository. Thank you & Enjoy!**
+
+![screenshot](screenshot.png)
+
+
 ## 🗺️ Live Demo
 
 Simply open `leaf.html` in your web browser to see the interactive map in action.
